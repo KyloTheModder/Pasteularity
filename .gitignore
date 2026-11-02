@@ -1,0 +1,15 @@
+.gradle/
+build/
+local.properties
+keystore.properties
+*.jks
+*.keystore
+.idea/
+*.iml
+.kotlin/
+captures/
+*.apk
+*.aab
+tools/intro-video/build/
+
+backups/
