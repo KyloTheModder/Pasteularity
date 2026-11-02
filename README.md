@@ -22,5 +22,5 @@ I built this using JavaScript and Gradle. I also gotta be honest and say this wa
 Since it is completely open source you can look at all the code to see it is entirely safe. If you know how to code and want to fix my spaghetti code or add cool new stuff please fork it and make a pull request. I would really appreciate the help making this even better for everyone.
 
 ### Links
-* Check out my main website at libpaste.win
-* Join the libpaste discord server if you have questions or find any weird bugs
+* Check out our main website at libpaste.win
+* Join the libpaste discord server if you have questions or anything else dsc.gg/libpaste
