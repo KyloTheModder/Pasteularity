@@ -37,7 +37,7 @@ I decided to make this tool because Ocular Migraine MCP is getting super old and
 
 <hr>
 
-## Under The Hood And Spaghetti Code Warning
+## Under The Hood And Spaghetti Code Warning.
 
 This whole app is built using JavaScript and compiled for Android with Gradle. I gotta be completely honest with you guys this project was heavily made with Opus 5.5 so there is probably going to be a lot of spaghetti code inside the files. 
 
