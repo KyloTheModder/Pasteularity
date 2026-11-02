@@ -1,6 +1,11 @@
-# Pasteularity
+# Pasteularity то
 
-https://github.com/KyloTheModder/Pasteularity/raw/main/16441.mp4
+<p align="center">
+  <a href="https://github.com/KyloTheModder/Pasteularity/releases"><img src="https://img.shields.io/github/v/release/KyloTheModder/Pasteularity?style=for-the-badge&color=orange&label=LATEST"></a>
+  <img src="https://img.shields.io/github/downloads/KyloTheModder/Pasteularity/total?style=for-the-badge&color=brightgreen&label=DOWNLOADS">
+  <img src="https://img.shields.io/github/contributors/KyloTheModder/Pasteularity?style=for-the-badge&color=green&label=CONTRIBUTORS">
+  <a href="https://dsc.gg/libpaste"><img src="https://img.shields.io/badge/DISCORD-LIBPASTE-purple?style=for-the-badge"></a>
+</p>
 
 
 wsg this is Pasteularity. I worked really hard on this for a while so I hope you guys actually use it. It is a completely free and open source toolbox for your Meta Quest and you do not even need root to use it at all. 
