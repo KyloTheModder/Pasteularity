@@ -1,6 +1,6 @@
 # Pasteularity
 
-<video src="16441.mp4" autoplay loop muted playsinline width="100%"></video>
+<video src="[https://raw.githubusercontent.com/KyloTheModder/Pasteularity/main/16441.mp4](https://raw.githubusercontent.com/KyloTheModder/Pasteularity/main/16441.mp4)" autoplay loop muted playsinline width="100%"></video>
 
 wsg this is Pasteularity. I worked really hard on this for a while so I hope you guys actually use it. It is a completely free and open source toolbox for your Meta Quest and you do not even need root to use it at all. 
 
