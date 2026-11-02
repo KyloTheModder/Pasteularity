@@ -1,4 +1,4 @@
-# Pasteularity то
+# Pasteularity 
 
 <p align="center">
   <a href="https://github.com/KyloTheModder/Pasteularity/releases"><img src="https://img.shields.io/github/v/release/KyloTheModder/Pasteularity?style=for-the-badge&color=orange&label=LATEST"></a>
