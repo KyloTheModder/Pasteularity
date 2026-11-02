@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="pstu_background">#140B24</color>
+
+    <style name="Theme.Pasteularity" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/pstu_background</item>
+        <item name="android:statusBarColor">@color/pstu_background</item>
+        <item name="android:navigationBarColor">@color/pstu_background</item>
+    </style>
+</resources>

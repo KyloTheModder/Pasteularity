@@ -1,0 +1,1019 @@
+<title>Pasteularity Preview</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&family=Roboto+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=block">
+<style>
+/* Layout: the app's fixed 1280 x 800 VR panel, scaled to fit, with a slim simulator bar above it. */
+:root {
+  --bg: #140B24; --surface: rgba(36, 20, 62, .85); --raised: #2E1C4C; --outline: #443361;
+  --accent: #9B5CF6; --on-accent: #140B24; --text: #ECE2FF; --muted: #B3A5CF; --danger: #F08A80;
+  --sans: Roboto, "Noto Sans", Arial, sans-serif; --mono: "Roboto Mono", Consolas, Menlo, monospace;
+  --r: 12px; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--text); font-family: var(--sans); }
+body { margin: 0; padding-block: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); overflow-x: hidden; }
+.sim { max-width: 1280px; margin: 0 auto 16px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.sim-copy { flex: 1 1 320px; min-width: 0; }
+.sim h1 { margin: 0; font-size: 18px; line-height: 26px; font-weight: 600; }
+.sim p { margin: 0; font-size: 14px; line-height: 20px; color: var(--muted); }
+.sim-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.sim-tools button { min-height: 40px; padding: 0 12px; background: transparent; color: var(--text); border: 1px solid var(--outline); border-radius: var(--r); font: 500 14px var(--sans); cursor: pointer; }
+.sim-tools button:hover { background: var(--surface); }
+.stage-wrap { margin: 0 auto; max-width: 1280px; overflow: hidden; border-radius: var(--r); outline: 1px solid var(--outline); }
+#panel { width: 1280px; height: 800px; transform-origin: 0 0; position: relative; overflow: hidden; background: var(--bg); }
+#web { position: absolute; inset: 0; width: 100%; height: 100%; }
+#app { position: absolute; inset: 0; overflow: hidden; font-size: 15px; line-height: 22px; user-select: none; }
+.warn { display: flex; gap: 8px; align-items: center; color: var(--danger); }
+button, input { font-family: var(--sans); color: inherit; }
+:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.ms { font-family: "Material Symbols Outlined"; font-weight: 400; font-style: normal; font-size: 22px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; direction: ltr; -webkit-font-smoothing: antialiased; font-feature-settings: "liga"; display: inline-block; flex: none; width: 1em; overflow: hidden; }
+.shell { display: flex; height: 100%; }
+.rail { width: 112px; flex: none; background: var(--surface); padding: 16px 8px; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.rail-mark { font-size: 18px; line-height: 26px; font-weight: 600; padding-bottom: 8px; }
+.rail-item { width: 100%; height: 80px; flex: none; border: 0; border-radius: var(--r); background: transparent; color: var(--muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; line-height: 20px; font-weight: 400; }
+.rail-item .ms { font-size: 28px; }
+.rail-item:hover { background: var(--raised); }
+.rail-item.on { background: var(--raised); color: var(--text); font-weight: 600; }
+.rail-item.on .ms { color: var(--accent); }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.top { display: flex; align-items: center; padding: 16px 24px 8px; }
+.top h2 { flex: 1; margin: 0; font-size: 30px; line-height: 38px; font-weight: 600; }
+.content { flex: 1; min-height: 0; padding: 0 24px 24px; position: relative; }
+.chip, .btn, .choice { min-height: 56px; border-radius: var(--r); display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; font: 500 16px/22px var(--sans); cursor: pointer; border: 0; white-space: nowrap; }
+.chip { background: var(--surface); color: var(--text); border: 1px solid var(--outline); }
+.chip.ok { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.btn { background: var(--raised); color: var(--text); min-width: 56px; }
+.btn:hover:not([disabled]) { filter: brightness(1.18); }
+.btn.primary { background: var(--accent); color: var(--on-accent); }
+.btn.quiet { background: transparent; }
+.btn.quiet:hover:not([disabled]) { background: var(--raised); filter: none; }
+.btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+.btn.danger:hover:not([disabled]) { background: rgba(240,138,128,.1); filter: none; }
+.btn.outline { background: var(--bg); border: 1px solid var(--outline); }
+a.btn { text-decoration: none; }
+.dialog.pages { width: 720px; }
+.btn[disabled] { opacity: .45; cursor: default; }
+.btn.loading { opacity: 1; cursor: progress; }
+.btn.wide { width: 100%; }
+.spin { width: 20px; height: 20px; flex: none; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.choices { display: flex; gap: 8px; flex-wrap: wrap; }
+.choice { min-width: 72px; background: var(--bg); color: var(--text); border: 1px solid var(--outline); }
+.choice:hover:not([disabled]) { border-color: var(--muted); }
+.choice.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.choice[disabled] { color: var(--muted); cursor: default; }
+.panel { background: var(--surface); border-radius: var(--r); padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.stack8 { display: flex; flex-direction: column; gap: 8px; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row16 { display: flex; gap: 16px; }
+.grow { flex: 1; min-width: 0; }
+.scroll { overflow-y: auto; }
+.fill { height: 100%; }
+h3 { margin: 0; font-size: 22px; line-height: 30px; font-weight: 600; }
+h4 { margin: 0; font-size: 18px; line-height: 26px; font-weight: 600; }
+.muted { color: var(--muted); }
+.body-l { font-size: 17px; line-height: 26px; }
+.err { color: var(--danger); }
+.label { font: 500 16px/22px var(--sans); }
+.value { font: 500 16px/22px var(--sans); }
+.ell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.action-card { flex: 1; min-height: 96px; border: 0; background: var(--surface); color: var(--text); border-radius: var(--r); padding: 16px 24px; display: flex; gap: 16px; align-items: center; text-align: left; cursor: pointer; }
+.action-card:hover { background: var(--raised); }
+.action-card .ms { font-size: 28px; }
+.action-card .spin { width: 24px; height: 24px; color: var(--accent); margin: 0 2px; }
+.field { position: relative; display: block; min-width: 0; }
+.field input { width: 100%; height: 56px; background: transparent; border: 1px solid var(--outline); border-radius: var(--r); padding: 12px 16px 0; font-size: 17px; outline: 0; user-select: text; }
+.field input:focus { border-color: var(--accent); border-width: 2px; padding-left: 15px; }
+.field.bad input { border-color: var(--danger); }
+.field span { position: absolute; left: 16px; top: 17px; color: var(--muted); font-size: 17px; line-height: 22px; pointer-events: none; transition: all .1s; white-space: nowrap; }
+.field input:focus + span, .field input:not(:placeholder-shown) + span { top: 5px; font-size: 12px; line-height: 16px; }
+.field.mono input { font-family: var(--mono); font-size: 15px; }
+.state { height: 100%; display: flex; align-items: center; justify-content: center; padding: 32px; }
+.state > div { max-width: 480px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.state .ms { font-size: 40px; color: var(--muted); }
+.state .act { padding-top: 8px; }
+.loading-state { height: 100%; display: flex; gap: 16px; align-items: center; justify-content: center; font-size: 17px; }
+.loading-state .spin { color: var(--accent); }
+.box { background: var(--surface); border-radius: var(--r); min-height: 0; overflow: hidden; }
+.mono-out { height: 100%; overflow: auto; padding: 16px; font: 15px/22px var(--mono); white-space: pre-wrap; word-break: break-word; user-select: text; }
+.mono-out .cmd { font-weight: 700; }
+.mono-out .status { color: var(--muted); }
+.mono-out .e { color: var(--danger); }
+.snippet { width: 100%; min-height: 56px; background: var(--raised); color: var(--text); border: 0; border-radius: var(--r); padding: 8px 16px; text-align: left; cursor: pointer; display: block; }
+.snippet:hover:not([disabled]) { filter: brightness(1.18); }
+.snippet[disabled] { opacity: .6; cursor: default; }
+.place { width: 100%; min-height: 56px; display: flex; gap: 16px; align-items: center; padding: 0 16px; border: 0; border-radius: var(--r); background: transparent; color: var(--text); cursor: pointer; font: 500 16px var(--sans); text-align: left; }
+.place .ms { color: var(--muted); font-size: 24px; }
+.place:hover { background: var(--raised); }
+.place.on { background: var(--raised); }
+.place.on .ms { color: var(--accent); }
+.crumbs { display: flex; align-items: center; overflow-x: auto; flex: none; }
+.crumb { min-height: 56px; padding: 0 16px; border: 0; background: transparent; border-radius: var(--r); color: var(--muted); font: 500 16px var(--sans); cursor: pointer; white-space: nowrap; flex: none; }
+.crumb:hover { background: var(--surface); }
+.crumb.last { color: var(--text); font-size: 18px; font-weight: 600; }
+.bar { background: var(--raised); border-radius: var(--r); padding: 8px 16px; display: flex; gap: 16px; align-items: center; flex: none; }
+.track { flex: 1; height: 4px; background: var(--outline); border-radius: 2px; overflow: hidden; }
+.track i { display: block; height: 100%; background: var(--accent); }
+.track.indef i { width: 35%; animation: slide 1.2s ease-in-out infinite; }
+@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+.frow { min-height: 64px; display: flex; align-items: center; gap: 8px; padding-right: 24px; cursor: pointer; }
+.frow:hover { background: rgba(46,28,76,.6); }
+.frow.on { background: var(--raised); }
+.frow > .ms { font-size: 24px; color: var(--muted); }
+.tick { width: 56px; height: 56px; flex: none; margin-left: 8px; display: flex; align-items: center; justify-content: center; background: transparent; border: 0; border-radius: var(--r); cursor: pointer; }
+.tick:hover { background: var(--outline); }
+.tick i { width: 28px; height: 28px; border-radius: var(--r); background: var(--outline); display: flex; align-items: center; justify-content: center; }
+.tick.on i { background: var(--accent); color: var(--on-accent); }
+.approw { min-height: 72px; display: flex; gap: 16px; align-items: center; padding: 8px 16px; cursor: pointer; }
+.approw:hover { background: rgba(46,28,76,.6); }
+.approw.on { background: var(--raised); }
+.appicon { width: 40px; height: 40px; flex: none; border-radius: var(--r); background: var(--raised); color: var(--muted); display: flex; align-items: center; justify-content: center; }
+.appicon.big { width: 56px; height: 56px; }
+.approw.on .appicon { background: var(--outline); }
+.wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.step { min-height: 56px; width: 100%; display: flex; gap: 16px; align-items: center; padding: 0 16px; border: 0; border-radius: var(--r); background: transparent; color: var(--text); cursor: pointer; font: 500 16px var(--sans); }
+.step b { width: 32px; height: 32px; border-radius: var(--r); background: var(--raised); display: flex; align-items: center; justify-content: center; font-weight: 500; flex: none; }
+.step.on { background: var(--surface); font-weight: 600; }
+.step.on b { background: var(--accent); color: var(--on-accent); }
+ol.how { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+ol.how li { display: flex; gap: 16px; font-size: 17px; line-height: 26px; }
+ol.how li span:first-child { width: 24px; flex: none; color: var(--muted); }
+.scrim { position: absolute; inset: 0; background: rgba(9,4,18,.62); display: flex; align-items: center; justify-content: center; z-index: 5; }
+.dialog { width: 520px; max-height: 720px; background: var(--raised); border-radius: var(--r); padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.dialog.picker { width: 760px; height: 620px; gap: 8px; }
+.dialog p { margin: 0; font-size: 17px; line-height: 26px; white-space: pre-line; overflow-wrap: anywhere; }
+.dialog .actions { display: flex; justify-content: flex-end; gap: 8px; }
+.pick-row { min-height: 56px; display: flex; gap: 16px; align-items: center; padding: 0 16px; cursor: pointer; font-size: 17px; }
+.pick-row:hover { background: rgba(46,28,76,.6); }
+.pick-row .ms { color: var(--muted); font-size: 24px; }
+.pick-row .tick { margin: 0 -8px 0 -16px; }
+.snack { position: absolute; left: 112px; right: 0; bottom: 24px; display: flex; justify-content: center; pointer-events: none; z-index: 9; }
+.snack div { background: var(--raised); border-radius: var(--r); padding: 14px 16px; font-size: 17px; line-height: 26px; outline: 1px solid var(--outline); max-width: 760px; overflow-wrap: anywhere; }
+.snack.full { left: 0; }
+.snack.bad div { color: var(--danger); }
+@media (prefers-reduced-motion: reduce) { .spin, .track.indef i { animation-duration: 3s; } }
+</style>
+
+<div class="sim">
+  <div class="sim-copy">
+    <h1>Pasteularity preview</h1>
+    <p>Click anything. The shell, files and apps here are simulated, so nothing reaches a headset. Any six-digit code pairs; 000000 shows the failure.</p>
+  </div>
+  <div class="sim-tools" aria-label="Simulator controls">
+    <button id="sim-disc" type="button" data-sim="disconnect">Drop connection</button>
+    <button id="sim-unpair" type="button" data-sim="unpair">Reset pairing</button>
+    <button id="sim-setup" type="button" data-sim="setup">Replay setup</button>
+    <button id="sim-bytezuku" type="button" data-sim="bytezuku">Start ByteZuku</button>
+  </div>
+</div>
+<div class="stage-wrap" id="wrap"><div id="panel"><canvas id="web" aria-hidden="true"></canvas><div id="app"></div></div></div>
+
+<script>
+"use strict";
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const icon = n => `<span class="ms" aria-hidden="true">${n}</span>`;
+const GB = 1073741824, MB = 1048576;
+const now = Math.floor(Date.now() / 1000);
+
+/* ---------- Simulated filesystem ---------- */
+const dir = (c = {}, t = now - 86400 * 3) => ({ d: true, c, t });
+const file = (s, t = now - 86400) => ({ s, t });
+const fs = dir({
+  data: { d: true, c: {}, t: now - 86400 * 40, denied: true },
+  sdcard: dir({
+    ".thumbnails": dir(),
+    Android: dir({
+      data: dir({
+        "com.beatgames.beatsaber": dir({ cache: dir({ "shaders.bin": file(44 * MB) }), files: dir({ "PlayerData.dat": file(182000) }) }),
+        "com.vrgames.superhot": dir({ cache: dir({ "temp.dat": file(9 * MB) }) }),
+        "org.videolan.vlc": dir({ files: dir() }),
+      }),
+      obb: dir({
+        "com.beatgames.beatsaber": dir({ "main.1400.com.beatgames.beatsaber.obb": file(1.4 * GB) }),
+        "com.vrgames.superhot": dir({ "main.26.com.vrgames.superhot.obb": file(780 * MB) }),
+        "com.schellgames.blocks": dir(),
+      }),
+    }),
+    DCIM: dir(),
+    Download: dir({
+      "TrackRacer.apk": file(96 * MB),
+      "main.1402.com.example.racer.obb": file(2 * GB),
+      "patch.1402.com.example.racer.obb": file(304 * MB),
+      "racer-obb": dir({ "main.1402.com.example.racer.obb": file(2 * GB) }),
+      "notes.txt": file(2100),
+    }),
+    Movies: dir({ "headset-tour.mp4": file(612 * MB) }),
+    Oculus: dir({ Screenshots: dir({ "com.oculus.vrshell-20261012.jpg": file(1.2 * MB) }), VideoShots: dir() }),
+    Pictures: dir(),
+  }),
+  system: dir({ bin: dir(), etc: dir() }),
+});
+const OBB = "/sdcard/Android/obb", DATA = "/sdcard/Android/data", DL = "/sdcard/Download";
+const PROTECTED = new Set(["/", "/sdcard", "/storage", "/storage/emulated", "/storage/emulated/0", "/sdcard/Android", OBB, DATA]);
+const parent = p => p === "/" ? null : (p.slice(0, p.lastIndexOf("/")) || "/");
+const base = p => p.slice(p.lastIndexOf("/") + 1);
+const join = (d, n) => d.endsWith("/") ? d + n : `${d}/${n}`;
+function node(p) {
+  let n = fs;
+  for (const part of p.split("/").filter(Boolean)) { if (!n || !n.d || n.denied) return n && n.denied ? n : null; n = n.c[part]; }
+  return n || null;
+}
+function ensureDir(p) {
+  let n = fs;
+  for (const part of p.split("/").filter(Boolean)) { n.c[part] = n.c[part] || dir({}, Math.floor(Date.now() / 1000)); n = n.c[part]; }
+  return n;
+}
+const clone = n => n.d ? { ...n, c: Object.fromEntries(Object.entries(n.c).map(([k, v]) => [k, clone(v)])) } : { ...n };
+function removePath(p) { const up = node(parent(p)); if (up) delete up.c[base(p)]; }
+function placeAt(p, n) { const up = node(parent(p)); if (up && up.d) up.c[base(p)] = n; }
+const entries = p => Object.entries(node(p).c).map(([name, n]) => ({ name, path: join(p, name), isDir: !!n.d, size: n.s || 0, t: n.t }));
+const fmtSize = b => { const u = ["B", "KB", "MB", "GB", "TB"]; let v = b, i = 0; while (v >= 1024 && i < 4) { v /= 1024; i++; } return i ? `${v.toFixed(1)} ${u[i]}` : `${Math.round(b)} B`; };
+const fmtDate = s => { const d = new Date(s * 1000), z = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`; };
+const stamp = () => fmtDate(Math.floor(Date.now() / 1000)).replace(/[- :]/g, "").replace(/^(\d{8})/, "$1-") + "00";
+const validName = n => !n.trim() ? "Enter a name." : n.includes("/") ? "Names cannot contain a slash." : (n === "." || n === "..") ? "That name is reserved." : n.length > 255 ? "That name is too long." : null;
+const validPkg = n => /^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$/.test(n);
+const obbPkg = n => (n.match(/^(?:main|patch)\.\d+\.(.+)\.obb$/) || [])[1];
+const copyName = n => { const i = n.lastIndexOf("."); return i > 0 ? `${n.slice(0, i)} copy${n.slice(i)}` : `${n} copy`; };
+
+/* ---------- App state ---------- */
+const DESTS = [["Home", "home"], ["Terminal", "terminal"], ["Files", "folder"], ["Display", "tune"], ["Apps", "apps"], ["Utilities", "build"], ["Settings", "settings"]];
+const P = { refresh: "debug.oculus.refreshRate", w: "debug.oculus.textureWidth", h: "debug.oculus.textureHeight", ffr: "debug.oculus.foveation.level", cpu: "debug.oculus.cpuLevel", gpu: "debug.oculus.gpuLevel" };
+const S = {
+  dest: "Home", setup: false, paired: true, adbUp: true, bytezukuUp: false, bytezuku: "NotRunning", pref: "Auto", connecting: false,
+  dialogs: [], snack: null, busy: {},
+  home: { prox: false, adv: false },
+  onb: { step: 0, code: "", port: "", detected: false, pairing: false, error: null },
+  term: { lines: [], input: "pm list packages -3", cwd: "/sdcard", running: false, edit: false, history: ["df -h /sdcard", "getprop ro.product.model"], idx: -1 },
+  snippets: [["Android version", "getprop ro.build.version.release"], ["Sideloaded apps", "pm list packages -3"], ["Storage", "df -h /sdcard"], ["Battery", "dumpsys battery"]],
+  files: { path: OBB, sel: [], sort: "Name", asc: true, filter: "", hidden: false, clip: null, op: null },
+  props: {
+    "ro.product.model": "Quest 3", "ro.product.device": "eureka", "ro.vros.build.version": "207","ro.build.version.release": "14",
+    "service.adb.tls.port": "37215", [P.refresh]: "90", [P.w]: "1832", [P.h]: "1832", [P.ffr]: "2", [P.cpu]: "", [P.gpu]: "",
+  },
+  disp: { cw: "", ch: "", busy: false },
+  profiles: [{ name: "Performance", values: { [P.refresh]: "120", [P.cpu]: "4", [P.gpu]: "4" } }, { name: "Battery saver", values: { [P.refresh]: "72", [P.ffr]: "3" } }],
+  apps: {
+    list: [
+      ["com.beatgames.beatsaber", "Beat Saber", "1.40.3", false], ["com.schellgames.blocks", "Blocks", "2.1.0", false], ["com.vrgames.superhot", "Superhot VR", "1.0.26", false],
+      ["org.videolan.vlc", "VLC", "3.6.0", false], ["com.android.settings", "Settings", "14", true], ["com.oculus.vrshell", "Horizon Home", "78.0", true], ["com.oculus.browser", "Meta Quest Browser", "37.2", true],
+    ].map(([pkg, label, ver, sys]) => ({ pkg, label, ver, sys })),
+    q: "", sys: false, sel: "com.beatgames.beatsaber", busy: null, step: null,
+  },
+  util: {
+    tab: "Device", bat: 83, shotBusy: false, rec: false, recSec: 60, last: null, deviceBusy: false,
+    log: { lines: [], running: true, paused: false, tag: "", level: "Info", exporting: false },
+    tw: { stay: "0", capture: "", window_animation_scale: "1", transition_animation_scale: "1", animator_duration_scale: "1" }, twBusy: false, trim: false,
+  },
+};
+function status() {
+  const useAdb = S.pref !== "ByteZuku", useSz = S.pref !== "Adb";
+  if (useAdb && S.adbUp) return { k: "Connected", kind: "Wireless debugging" };
+  if (useSz && S.bytezukuUp) return { k: "Connected", kind: "ByteZuku" };
+  if (S.connecting) return { k: "Connecting" };
+  if (useAdb && !S.paired) return { k: "Not paired" };
+  return { k: "Disconnected" };
+}
+const up = () => status().k === "Connected";
+
+/* ---------- Small UI builders ---------- */
+function btn(text, a, o = {}) {
+  const cls = ["btn", o.style || "", o.wide ? "wide" : "", o.loading ? "loading" : ""].join(" ");
+  const off = o.disabled || o.loading;
+  return `<button type="button" class="${cls}" ${off ? "disabled" : ""} data-a="${a}" ${o.v !== undefined ? `data-v="${esc(o.v)}"` : ""}>${o.loading ? `<span class="spin"></span>` : o.icon ? icon(o.icon) : ""}${esc(text)}</button>`;
+}
+function choices(list, sel, a, disabled) {
+  return `<div class="choices">${list.map(([v, l]) => `<button type="button" class="choice ${String(v) === String(sel) ? "on" : ""}" ${disabled ? "disabled" : ""} data-a="${a}" data-v="${esc(v)}">${esc(l)}</button>`).join("")}</div>`;
+}
+function field(id, label, value, input, o = {}) {
+  return `<label class="field ${o.cls || ""} ${o.bad ? "bad" : ""}" style="${o.style || ""}"><input id="${id}" data-i="${input}" value="${esc(value)}" placeholder=" " autocomplete="off" spellcheck="false" ${o.disabled ? "disabled" : ""} ${o.num ? 'inputmode="numeric"' : ""}><span>${esc(label)}</span></label>`;
+}
+function setting(title, desc, value, controls = "") {
+  return `<div class="stack8"><div class="row"><h4 class="grow">${esc(title)}</h4>${value != null ? `<span class="value">${esc(value)}</span>` : ""}</div><div class="muted">${esc(desc)}</div>${controls}</div>`;
+}
+function stateView(ic, title, msg, action = "") {
+  return `<div class="state"><div>${icon(ic)}<h3>${esc(title)}</h3><div class="body-l muted">${esc(msg)}</div>${action ? `<div class="act">${action}</div>` : ""}</div></div>`;
+}
+const loadingView = l => `<div class="loading-state"><span class="spin"></span>${esc(l)}</div>`;
+
+let snackTimer;
+function snack(text, err) { S.snack = { text, err }; clearTimeout(snackTimer); snackTimer = setTimeout(() => { S.snack = null; render(); }, 3200); render(); }
+const ok = t => snack(t, false), fail = t => snack(t, true);
+const confirmDlg = (title, message, confirm, onOk, danger = true) => { S.dialogs.push({ type: "confirm", title, message, confirm, onOk, danger }); render(); };
+const inputDlg = (title, label, confirm, onOk, initial = "", validate = () => null) => { S.dialogs.push({ type: "input", title, label, confirm, onOk, value: initial, validate }); render(); };
+const later = (ms, fn) => setTimeout(() => { fn(); render(); }, ms);
+
+/* ---------- Views ---------- */
+function view() {
+  const body = S.setup ? onboardingView() : shellView();
+  const dialogs = S.dialogs.map((d, i) => dialogView(d, i)).join("");
+  const sn = S.snack ? `<div class="snack ${S.setup ? "full" : ""} ${S.snack.err ? "bad" : ""}" role="status"><div>${esc(S.snack.text)}</div></div>` : "";
+  return body + dialogs + sn;
+}
+function shellView() {
+  const st = status(), d = DESTS.find(x => x[0] === S.dest);
+  const needs = !["Home", "Settings"].includes(S.dest);
+  const chipIcon = st.k === "Connected" ? "link" : st.k === "Connecting" ? "sync" : "link_off";
+  let content;
+  if (needs && !up()) content = notConnected(st);
+  else content = ({ Home: homeView, Terminal: termView, Files: filesView, Display: displayView, Apps: appsView, Utilities: utilView, Settings: settingsView })[S.dest]();
+  return `<div class="shell"><nav class="rail" aria-label="Main"><div class="rail-mark">PSTU</div>${DESTS.map(([n, i]) => `<button type="button" class="rail-item ${n === S.dest ? "on" : ""}" data-a="go" data-v="${n}">${icon(i)}${n}</button>`).join("")}</nav>
+  <div class="main"><div class="top"><h2>${d[0]}</h2><button type="button" class="chip ${st.k === "Connected" ? "ok" : ""}" data-a="chip">${icon(chipIcon)}${st.k}</button></div><div class="content">${content}</div></div></div>`;
+}
+function notConnected(st) {
+  const paired = st.k !== "Not paired";
+  return stateView("link_off", paired ? "Not connected" : "Not paired yet",
+    paired ? "Check that Wireless debugging is on and the headset is on Wi-Fi." : "This screen needs shell access. Pairing takes about two minutes.",
+    paired ? btn("Reconnect", "reconnect", { style: "primary" }) : btn("Start setup", "openSetup", { style: "primary" }));
+}
+
+function onboardingView() {
+  const o = S.onb, titles = ["Developer Mode", "Wireless debugging", "Pair this headset"];
+  const how = l => `<ol class="how">${l.map((t, i) => `<li><span>${i + 1}.</span><span>${esc(t)}</span></li>`).join("")}</ol>`;
+  let step;
+  if (o.step === 0) step = `<div class="panel"><h3>Turn on Developer Mode</h3>${how(["On your phone, open the Meta Horizon app and go to your headset's settings.", "Open Developer Mode and turn it on. Meta asks you to register as a developer the first time.", "Restart the headset if the option does not appear in the next step."])}<div>${btn("Next", "onbStep", { style: "primary", v: 1 })}</div></div>`;
+  else if (o.step === 1) step = `<div class="panel"><h3>Turn on Wireless debugging</h3>${how(["Open Developer options with the button below. Move it next to this window.", "If it says they are unavailable, check Developer Mode in the phone app and restart the headset.", "Turn on Wireless debugging. The headset must be on Wi-Fi.", "Select Wireless debugging, then Pair device with pairing code."])}<div class="row">${btn("Open Developer options", "onbSettings", { icon: "settings" })}${btn("Next", "onbStep", { style: "primary", v: 2 })}</div></div>`;
+  else step = `<div class="panel"><h3>Enter the pairing code</h3><div class="body-l muted">Keep the pairing dialog open in Developer options while you type. The code expires when it closes.</div>
+    <div class="row16">${field("onb-code", "Six-digit code", o.code, "onbCode", { style: "flex:1", disabled: o.pairing, num: true })}${field("onb-port", o.detected ? "Port (found automatically)" : "Port", o.port, "onbPort", { style: "flex:1", disabled: o.pairing, num: true })}</div>
+    ${o.detected ? "" : `<div class="muted">The port is the number after the colon under IP address &amp; Port in the pairing dialog.</div>`}
+    ${o.error ? `<div class="body-l err">${esc(o.error)}</div>` : ""}
+    <div>${btn(o.pairing ? "Pairing" : "Pair", "onbPair", { style: "primary", loading: o.pairing, disabled: o.code.length !== 6 || !o.port })}</div></div>`;
+  const sz = S.bytezuku;
+  const szMsg = { NotRunning: "ByteZuku is not running. Start it from its app and this option becomes available.", NeedsPermission: "ByteZuku is running. Allow Pasteularity to use it and you can skip pairing.", Ready: "ByteZuku is running and Pasteularity has permission. You can skip pairing." }[sz];
+  return `<div class="row16" style="height:100%;padding:32px;gap:32px"><div style="width:320px;flex:none;display:flex;flex-direction:column">
+    <h2 style="margin:0;font-size:30px;line-height:38px;font-weight:600">Set up Pasteularity</h2>
+    <div class="body-l muted" style="padding:8px 0 24px">It needs shell access to change system settings. This takes about two minutes and you only do it once.</div>
+    ${titles.map((t, i) => `<button type="button" class="step ${o.step === i ? "on" : ""}" data-a="onbStep" data-v="${i}"><b>${i + 1}</b>${t}</button>`).join("")}
+    <div class="grow"></div><div>${btn("Skip for now", "onbSkip", { style: "quiet" })}</div></div>
+    <div class="grow stack scroll" data-s="onb">${step}<div class="panel"><h4>Already use ByteZuku?</h4><div class="body-l muted">${szMsg}</div>${sz !== "NotRunning" ? `<div>${btn(sz === "Ready" ? "Use ByteZuku" : "Allow ByteZuku", "useByteZuku")}</div>` : ""}</div></div></div>`;
+}
+
+function homeView() {
+  const h = S.home, c = up();
+  return `<div class="stack scroll fill" data-s="home"><div class="row16">
+    <button type="button" class="action-card" data-a="openSettings">${icon("settings")}<span><h4>Open Android Settings</h4><span class="muted">The Android settings screens that Horizon OS hides.</span></span></button>
+    <button type="button" class="action-card" data-a="rebootAsk" data-v="Reboot">${S.busy.reboot ? `<span class="spin"></span>` : icon("restart_alt")}<span><h4>Reboot</h4><span class="muted">${c ? "Restart the headset." : "Connect first to reboot from here."}</span></span></button></div>
+    <div class="panel">${setting("Proximity sensor", "Turn it off to keep the display awake when the headset is not on your face. It turns back on after a reboot. Horizon OS does not report this setting, so this shows what Pasteularity last set.", h.prox ? "Off" : "On", choices([[false, "On"], [true, "Off"]], h.prox, "prox", !c || S.busy.prox))}</div>
+    <div class="panel"><h3>Advanced</h3><div>${btn(h.adv ? "Hide advanced reboot options" : "Show advanced reboot options", "toggleAdv", { style: "quiet", icon: h.adv ? "expand_less" : "expand_more" })}</div>
+    ${h.adv ? `<div class="row">${btn("Reboot to bootloader", "rebootAsk", { style: "danger", disabled: !c, v: "Reboot to bootloader" })}${btn("Reboot to recovery", "rebootAsk", { style: "danger", disabled: !c, v: "Reboot to recovery" })}</div>` : ""}</div>
+    <div class="row" style="justify-content:flex-end"><a class="btn" href="https://dsc.gg/libpaste" target="_blank" rel="noopener">${icon("forum")}Discord</a></div></div>`;
+}
+
+function termOutput() {
+  const t = S.term;
+  return t.lines.map(l => `<div class="${l.k}">${esc(l.t) || "&nbsp;"}</div>`).join("");
+}
+function termView() {
+  const t = S.term;
+  const out = t.lines.length ? `<div class="mono-out" id="term-out" data-auto>${termOutput()}</div>` : stateView("terminal", "No output yet", "Type a command below or pick a snippet.");
+  const snips = S.snippets.map((s, i) => t.edit
+    ? `<div class="row"><span class="label grow ell">${esc(s[0])}</span>${btn("Remove", "snipRemove", { style: "danger", v: i })}</div>`
+    : `<button type="button" class="snippet" ${t.running ? "disabled" : ""} data-a="snipRun" data-v="${i}"><div class="label">${esc(s[0])}</div><div class="muted ell">${esc(s[1])}</div></button>`).join("");
+  return `<div class="row16 fill"><div class="grow stack8" style="height:100%"><div class="row"><span class="muted grow">Commands run as shell (uid 2000), not root.</span>${btn("Copy", "termCopy", { style: "quiet", icon: "content_copy" })}${btn("Clear", "termClear", { style: "quiet", icon: "delete_sweep" })}</div>
+    <div class="box grow">${out}</div>
+    <div class="row">${field("term-in", t.cwd, t.input, "termInput", { cls: "mono", style: "flex:1" })}${btn("Previous", "histPrev", { icon: "arrow_upward" })}${btn("Next", "histNext", { icon: "arrow_downward" })}${t.running ? btn("Stop", "termStop", { style: "danger", icon: "stop" }) : btn("Run", "termRun", { style: "primary", icon: "play_arrow", disabled: !t.input.trim() })}</div></div>
+    <div class="box stack8" style="width:280px;flex:none;padding:16px;height:100%"><div class="row"><h4 class="grow">Snippets</h4>${btn(t.edit ? "Done" : "Edit", "snipEdit", { style: "quiet" })}</div>
+    <div class="grow stack8 scroll" data-s="snips">${snips}</div>${btn("Save current command", "snipSave", { icon: "bookmark_add", wide: true, disabled: !t.input.trim() })}</div></div>`;
+}
+
+function fileIcon(e) {
+  if (e.isDir) return "folder";
+  const x = e.name.split(".").pop().toLowerCase();
+  return { apk: "android", obb: "inventory_2", png: "image", jpg: "image", jpeg: "image", webp: "image", mp4: "movie", mkv: "movie", webm: "movie" }[x] || "description";
+}
+function sortEntries(list, key, asc, filter, hidden) {
+  const by = { Name: (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()), Size: (a, b) => a.size - b.size, Date: (a, b) => a.t - b.t }[key];
+  return list.filter(e => hidden || !e.name.startsWith(".")).filter(e => !filter.trim() || e.name.toLowerCase().includes(filter.trim().toLowerCase()))
+    .sort((a, b) => (b.isDir - a.isDir) || (asc ? by(a, b) : by(b, a)));
+}
+function opBar() {
+  const op = S.files.op;
+  if (!op) return "";
+  const pct = op.progress != null ? ` ${Math.floor(op.progress * 100)}%` : "";
+  return `<span class="label">${esc(op.label + pct)}</span><div class="track ${op.progress == null ? "indef" : ""}"><i style="${op.progress != null ? `width:${op.progress * 100}%` : ""}"></i></div>${btn("Cancel", "opCancel", { style: "quiet" })}`;
+}
+function filesView() {
+  const f = S.files;
+  const places = [["Internal storage", "/sdcard", "sd_card"], ["Downloads", DL, "download"], ["OBB", OBB, "inventory_2"], ["App data", DATA, "storage"]];
+  const parts = f.path.split("/").filter(Boolean);
+  let acc = "";
+  const crumbs = [["/", "/"], ...parts.map(p => { acc += "/" + p; return [p, acc]; })];
+  const crumbHtml = crumbs.map(([l, p], i) => `<button type="button" class="crumb ${i === crumbs.length - 1 ? "last" : ""}" data-a="open" data-v="${esc(p)}">${esc(l)}</button>${i && i < crumbs.length - 1 ? `<span class="muted label">/</span>` : ""}`).join("");
+  const bar = f.sel.length === 0
+    ? `<div class="row">${field("file-filter", "Filter this folder", f.filter, "fileFilter", { style: "flex:1" })}${["Name", "Size", "Date"].map(k => btn(k, "fileSort", { v: k, style: f.sort === k ? "" : "quiet", icon: f.sort === k ? (f.asc ? "arrow_upward" : "arrow_downward") : null })).join("")}${btn("Hidden", "fileHidden", { style: "quiet", icon: f.hidden ? "visibility" : "visibility_off" })}${btn("New folder", "newFolder", { icon: "create_new_folder" })}</div>`
+    : `<div class="row"><h4 class="grow" style="padding-left:16px">${f.sel.length} selected</h4>${btn("Copy", "fileCopy", { icon: "content_copy" })}${btn("Cut", "fileCut", { icon: "content_cut" })}${btn("Rename", "fileRename", { icon: "drive_file_rename_outline", disabled: f.sel.length !== 1 })}${btn("Delete", "fileDelete", { style: "danger", icon: "delete" })}${btn("Clear", "fileClear", { style: "quiet", icon: "close" })}</div>`;
+  const clip = f.clip ? `<div class="bar"><span class="body-l grow">${f.clip.paths.length} ${f.clip.paths.length === 1 ? "item" : "items"} ${f.clip.cut ? "to move" : "to copy"}. Open the destination, then paste.</span>${btn("Discard", "clipDiscard", { style: "quiet" })}${btn("Paste here", "paste", { style: "primary", icon: "content_paste", disabled: !!f.op })}</div>` : "";
+  const op = f.op ? `<div class="bar" id="op-bar">${opBar()}</div>` : "";
+  const n = node(f.path);
+  let list;
+  if (!n || !n.d) list = stateView("error", "Cannot open this folder", "That folder no longer exists.", btn("Go to Internal storage", "open", { v: "/sdcard" }));
+  else if (n.denied) list = stateView("error", "Cannot open this folder", "Shell does not have access to this folder.", btn("Try again", "fileRefresh"));
+  else {
+    const vis = sortEntries(entries(f.path), f.sort, f.asc, f.filter, f.hidden);
+    if (!vis.length) list = stateView("folder_off", f.filter.trim() ? "No matches" : "This folder is empty", f.filter.trim() ? `Nothing here matches "${f.filter}".` : "Paste files here, or import an OBB.");
+    else list = `<div class="scroll fill" data-s="files:${esc(f.path)}">${vis.map(e => {
+      const on = f.sel.includes(e.path);
+      return `<div class="frow ${on ? "on" : ""}" data-a="${f.sel.length ? "fileToggle" : "fileOpen"}" data-v="${esc(e.path)}"><button type="button" class="tick ${on ? "on" : ""}" aria-label="Select ${esc(e.name)}" data-a="fileToggle" data-v="${esc(e.path)}"><i>${on ? icon("check") : ""}</i></button>${icon(fileIcon(e))}<span class="body-l grow ell" style="padding-left:8px">${esc(e.name)}</span><span class="muted" style="width:96px;flex:none">${e.isDir ? "" : fmtSize(e.size)}</span><span class="muted" style="width:144px;flex:none">${fmtDate(e.t)}</span></div>`;
+    }).join("")}</div>`;
+  }
+  return `<div class="row16 fill"><div class="box stack8" style="width:224px;flex:none;padding:8px;height:100%">${places.map(([l, p, i]) => `<button type="button" class="place ${f.path === p ? "on" : ""}" data-a="open" data-v="${esc(p)}">${icon(i)}${l}</button>`).join("")}<div class="grow"></div>${btn("Import OBB", "importObb", { style: "primary", icon: "inventory_2", wide: true })}</div>
+    <div class="grow stack8" style="height:100%"><div class="crumbs" id="crumbs" data-end>${crumbHtml}</div>${bar}${clip}${op}<div class="box grow">${list}</div></div></div>`;
+}
+
+const LIMITS = { eureka: [[72, 90, 120], 5], panther: [[72, 90, 120], 5], hollywood: [[60, 72, 90, 120], 4], seacliff: [[72, 90], 4], monterey: [[60, 72], 4] };
+function displayView() {
+  const pr = S.props, d = S.disp, [rates, maxL] = LIMITS[pr["ro.product.device"]] || [[60, 72, 90, 120], 5];
+  const warning = t => `<div class="warn">${icon("warning")}<span>${esc(t)}</span></div>`;
+  const clockWarning = "Raises clock speeds. Only use this if you know the optimal settings for your hardware.";
+  const level = (title, desc, prop, opts, unit, warn) => {
+    const cur = pr[prop] || "";
+    return `<div class="panel">${setting(title, desc, cur ? cur + unit : "Default", `${warn ? warning(warn) : ""}<div class="row"><div class="grow">${choices(opts.map(o => [o, o + unit]), cur, "propSet:" + prop, d.busy)}</div>${btn("Reset", "propReset", { style: "quiet", v: prop, disabled: d.busy || !cur })}</div>`)}</div>`;
+  };
+  const w = pr[P.w] || "", h = pr[P.h] || "";
+  const bad = v => { const n = +v; return !/^\d+$/.test(v) || n < 256 || n > 8192; };
+  const texture = `<div class="panel">${setting("Texture resolution", "The size apps render each eye at. Sharper at higher sizes, but heavier on the GPU.", w || h ? `${w} x ${h}` : "Default",
+    `<div class="row"><div class="grow">${choices([1024, 1440, 1832, 2048, 2560].map(o => [o, o]), w === h ? w : "", "texSet", d.busy)}</div>${btn("Reset", "texReset", { style: "quiet", disabled: d.busy || (!w && !h) })}</div>
+    <div class="row">${field("tex-w", "Custom width", d.cw, "texW", { style: "flex:1", num: true, bad: d.cw && bad(d.cw) })}${field("tex-h", "Custom height", d.ch, "texH", { style: "flex:1", num: true, bad: d.ch && bad(d.ch) })}${btn("Apply size", "texApply", { disabled: d.busy || bad(d.cw) || bad(d.ch) })}</div>`)}</div>`;
+  const levels = Array.from({ length: maxL + 1 }, (_, i) => i);
+  const summary = p => [p.values[P.refresh] && `${p.values[P.refresh]} Hz`, p.values[P.w] && `${p.values[P.w]}x${p.values[P.h] || ""}`, p.values[P.ffr] && `FFR ${p.values[P.ffr]}`, p.values[P.cpu] && `CPU ${p.values[P.cpu]}`, p.values[P.gpu] && `GPU ${p.values[P.gpu]}`].filter(Boolean).join(", ") || "All defaults";
+  return `<div class="row16 fill"><div class="grow stack scroll" style="height:100%" data-s="disp">
+    <div class="body-l muted">These values reset when the headset reboots. Apps read them at launch, so restart a game after changing them.</div>
+    ${warning("Only use these if you know the optimal settings for your hardware. Wrong values can cause overheating, throttling and crashes.")}
+    ${level("Refresh rate", "How many times per second the display updates. Higher is smoother and uses more battery.", P.refresh, rates, " Hz")}
+    ${texture}
+    ${level("Fixed foveated rendering", "Lowers detail at the edges of the view to save GPU power. 0 is off, 4 is strongest.", P.ffr, [0, 1, 2, 3, 4], "")}
+    ${level("CPU level", "The CPU clock floor. Higher levels run hotter and drain the battery faster.", P.cpu, levels, "", clockWarning)}
+    ${level("GPU level", "The GPU clock floor. Higher levels run hotter and drain the battery faster.", P.gpu, levels, "", clockWarning)}</div>
+    <div class="panel" style="width:320px;flex:none;height:100%"><h3>Profiles</h3><div class="grow stack scroll" data-s="profiles">
+    ${S.profiles.length ? S.profiles.map((p, i) => `<div class="stack8"><h4>${esc(p.name)}</h4><div class="muted">${esc(summary(p))}</div><div class="row">${btn("Apply", "profApply", { style: "primary", v: i, disabled: d.busy })}${btn("Delete", "profDelete", { style: "quiet", v: i })}</div></div>`).join("") : `<div class="body-l muted">No profiles yet. Set the values you want, then save them here to apply them in one step.</div>`}</div>
+    ${btn("Save current values", "profSave", { icon: "bookmark_add", wide: true })}${btn("Reset everything", "resetAll", { style: "danger", icon: "restart_alt", wide: true, disabled: d.busy })}</div></div>`;
+}
+
+function appsView() {
+  const a = S.apps, q = a.q.trim().toLowerCase();
+  const vis = a.list.filter(x => a.sys || !x.sys).filter(x => !q || x.label.toLowerCase().includes(q) || x.pkg.toLowerCase().includes(q)).sort((x, y) => x.label.toLowerCase().localeCompare(y.label.toLowerCase()));
+  const list = vis.length ? `<div class="scroll fill" data-s="apps">${vis.map(x => `<div class="approw ${x.pkg === a.sel ? "on" : ""}" data-a="appSel" data-v="${esc(x.pkg)}"><div class="appicon">${icon("android")}</div><div class="grow"><div class="body-l ell">${esc(x.label)}</div><div class="muted ell">${esc(x.pkg)}</div></div></div>`).join("")}</div>`
+    : stateView("search_off", "No apps found", q ? `Nothing matches "${a.q}".` : "Install an APK, or turn on System apps to see the rest.");
+  const sel = a.list.find(x => x.pkg === a.sel);
+  const b = a.busy;
+  const detail = sel ? `<div class="stack scroll fill" style="padding:24px" data-s="appd"><div class="row16" style="align-items:center"><div class="appicon big">${icon("android")}</div><div class="grow"><h3 class="ell">${esc(sel.label)}</h3><div class="muted">${esc(sel.pkg)}<br>Version ${esc(sel.ver)}</div></div></div>
+    <div class="wrap">${btn("Launch", "appAct", { style: "primary", icon: "play_arrow", v: "launch", loading: b === "launch" })}${btn("Force stop", "appAct", { icon: "stop", v: "stop", loading: b === "stop" })}${btn("OBB folder", "appFolder", { icon: "inventory_2", v: OBB })}${btn("Data folder", "appFolder", { icon: "folder", v: DATA })}${btn("Export APK", "appAct", { icon: "file_upload", v: "export", loading: b === "export" })}</div>
+    <h4 style="padding-top:8px">Remove</h4><div class="wrap">${btn("Clear cache", "appAsk", { style: "danger", icon: "cleaning_services", v: "cache", loading: b === "cache" })}${btn("Clear data", "appAsk", { style: "danger", icon: "delete_sweep", v: "data", loading: b === "data" })}${btn("Uninstall", "appAsk", { style: "danger", icon: "delete_forever", v: "uninstall", loading: b === "uninstall" })}</div></div>`
+    : stateView("touch_app", "Select an app", "Its actions show up here.");
+  return `<div class="row16 fill"><div class="grow stack8" style="height:100%"><div class="row">${field("app-q", "Search apps", a.q, "appQ", { style: "flex:1" })}${btn("System apps", "appSys", { style: "quiet", icon: a.sys ? "check_box" : "check_box_outline_blank" })}</div><div class="box grow">${list}</div>${btn(a.step || "Install APK and OBB", "installOpen", { style: "primary", icon: "install_mobile", wide: true, loading: !!a.step })}</div>
+    <div class="box" style="width:440px;flex:none;height:100%">${detail}</div></div>`;
+}
+
+const LEVELS = ["Verbose", "Debug", "Info", "Warning", "Error"];
+const logVisible = () => { const l = S.util.log; return l.lines.filter(e => LEVELS.indexOf(e.level) >= LEVELS.indexOf(l.level) && (!l.tag.trim() || e.tag.toLowerCase().includes(l.tag.trim().toLowerCase()))); };
+const logHtml = () => logVisible().map(e => `<div class="${e.level === "Error" ? "e" : ""}">${esc(e.raw)}</div>`).join("");
+const TWEAKS = [
+  ["stay", "Stay awake while charging", "Keeps the display on while the headset is plugged in. Android's own developer setting.", [["0", "Off"], ["7", "On"]]],
+  ["capture", "Capture size", "Resolution of the headset's own video capture. Resets on reboot.", [["", "Default"], ["1024", "1024"], ["1440", "1440"], ["1920", "1920"]]],
+  ...[["window_animation_scale", "Window animation speed"], ["transition_animation_scale", "Transition animation speed"], ["animator_duration_scale", "Animator duration speed"]].map(([k, t]) => [k, t, "How long system animations for this category take. Off makes panels feel quicker.", [["1", "Default"], ["0.5", "Fast"], ["0", "Off"]]]),
+];
+function utilView() {
+  const u = S.util, pr = S.props;
+  const tabs = choices(["Device", "Capture", "Logcat", "Wi-Fi ADB", "Tweaks"].map(t => [t, t]), u.tab, "utilTab");
+  let body;
+  const info = (title, rows) => `<div class="panel grow"><h3>${title}</h3>${rows.map(([l, v]) => `<div class="row16 body-l"><span class="muted" style="width:176px;flex:none">${l}</span><span>${esc(v)}</span></div>`).join("")}</div>`;
+  if (u.tab === "Device") {
+    body = u.deviceBusy ? loadingView("Reading device info") : `<div class="stack"><div class="row16">${info("Headset", [["Model", pr["ro.product.model"]], ["Horizon OS", pr["ro.vros.build.version"]], ["Android", pr["ro.build.version.release"]], ["IP address", "192.168.1.42"]])}${info("Power and storage", [["Battery", u.bat + "%"], ["Status", "Discharging"], ["Temperature", "31.2 C"], ["Storage used", "41G of 108G"]])}</div><div>${btn("Refresh", "devRefresh", { icon: "refresh" })}</div></div>`;
+  } else if (u.tab === "Capture") {
+    body = `<div class="stack scroll fill" data-s="cap"><div class="panel">${setting("Screenshot", "Saved to /sdcard/Pasteularity/screenshots. Some firmware only captures 2D panels.", null, `<div>${btn("Take screenshot", "shot", { style: "primary", icon: "camera_alt", loading: u.shotBusy })}</div>`)}</div>
+    <div class="panel">${setting("Screen recording", "Saved to /sdcard/Pasteularity/recordings. Android caps a single clip at three minutes.", null, `${choices([[30, "30 s"], [60, "1 min"], [180, "3 min"]], u.recSec, "recSec", u.rec)}<div>${u.rec ? btn("Stop recording", "recStop", { style: "danger", icon: "stop" }) : btn("Start recording", "recStart", { style: "primary", icon: "videocam" })}</div>`)}</div>
+    <div class="row16" style="align-items:center">${btn("Open in Files", "capOpen", { icon: "folder" })}${u.last ? `<span class="muted">Last saved: ${esc(u.last)}</span>` : ""}</div></div>`;
+  } else if (u.tab === "Logcat") {
+    const l = u.log, vis = logVisible();
+    const box = vis.length ? `<div class="mono-out" id="log-out" data-auto>${logHtml()}</div>` : stateView("subject", l.running ? "Waiting for matching lines" : "Logcat is stopped", l.running ? "Lower the level or clear the filter to see more." : "Select Start to read the system log.");
+    body = `<div class="stack8 fill"><div class="row">${l.running ? btn("Stop", "logStop", { style: "danger", icon: "stop" }) + btn(l.paused ? "Resume" : "Pause", "logPause", { icon: l.paused ? "play_arrow" : "pause" }) : btn("Start", "logStart", { style: "primary", icon: "play_arrow" })}${field("log-tag", "Filter by tag", l.tag, "logTag", { style: "flex:1" })}${btn("Clear", "logClear", { style: "quiet", icon: "delete_sweep" })}${btn("Export", "logExport", { icon: "file_upload", disabled: !vis.length, loading: l.exporting })}</div>${choices(LEVELS.map(x => [x, x]), l.level, "logLevel")}<div class="box grow" id="log-box">${box}</div></div>`;
+  } else if (u.tab === "Wi-Fi ADB") {
+    const addr = `192.168.1.42:${pr["service.adb.tls.port"]}`;
+    body = `<div class="panel"><h3>Connect from a PC</h3><div class="body-l muted">Pair the PC first if it has never connected to this headset, then run this command on it.</div><div style="font:15px/22px var(--mono);user-select:text">adb connect ${addr}</div><div class="row">${btn("Copy command", "copyAdb", { icon: "content_copy", v: `adb connect ${addr}` })}${btn("Refresh", "wifiRefresh", { style: "quiet", icon: "refresh" })}</div></div>`;
+  } else {
+    body = `<div class="stack scroll fill" data-s="tw">${TWEAKS.map(([k, t, d, o]) => { const cur = u.tw[k]; return `<div class="panel">${setting(t, d, (o.find(x => x[0] === cur) || [])[1], choices(o, cur, "tweak:" + k, u.twBusy))}</div>`; }).join("")}<div class="panel">${setting("Trim app caches", "Asks Android to free cache space across all apps. No app data is removed.", null, `<div>${btn("Trim caches", "trim", { icon: "cleaning_services", loading: u.trim })}</div>`)}</div></div>`;
+  }
+  return `<div class="stack fill">${tabs}<div class="grow" style="min-height:0">${body}</div></div>`;
+}
+
+function settingsView() {
+  const st = status();
+  const txt = { Connected: `Connected through ${st.kind}.`, Connecting: "Connecting.", "Not paired": "Not paired. Run the setup guide to connect.", Disconnected: "Disconnected. Check that Wireless debugging is on and the headset is on Wi-Fi." }[st.k];
+  const sz = { NotRunning: "Not running. Start it from the ByteZuku app to use it here.", NeedsPermission: "Running, but Pasteularity does not have permission yet.", Ready: "Running, and Pasteularity has permission." }[S.bytezuku];
+  return `<div class="stack scroll fill" data-s="set"><div class="panel"><h3>Connection</h3><div class="body-l">${txt}</div><div class="row">${btn("Reconnect", "reconnect", { style: "primary", icon: "refresh", loading: S.connecting })}${btn("Open setup guide", "openSetup", { icon: "info" })}</div></div>
+    <div class="panel">${setting("Shell backend", "Automatic uses Wireless debugging when it is connected and ByteZuku otherwise.", null, choices([["Auto", "Automatic"], ["Adb", "Wireless debugging"], ["ByteZuku", "ByteZuku"]], S.pref, "pref"))}</div>
+    <div class="panel">${setting("Wireless debugging pairing", S.paired ? "This headset is paired. Forgetting makes you pair again. To fully revoke access, also remove it under Wireless debugging in Android Settings." : "Not paired yet. The setup guide walks you through it.", null, S.paired ? `<div>${btn("Forget pairing", "forgetAsk", { style: "danger", icon: "link_off" })}</div>` : "")}</div>
+    <div class="panel">${setting("ByteZuku", sz, null, S.bytezuku === "NeedsPermission" ? `<div>${btn("Allow ByteZuku", "allowByteZuku")}</div>` : "")}</div>
+    <div class="panel"><h3>About</h3><div class="body-l muted">Pasteularity 1.0.0. Runs with shell permissions, without root.</div></div></div>`;
+}
+
+const SETTINGS_PAGES = ["Network and internet", "Wi-Fi", "Connected devices", "Apps", "Notifications", "Battery", "Storage", "Sound", "Display", "Accessibility", "Security", "Privacy", "Location", "Accounts", "Users", "System", "Developer options"];
+
+function dialogView(d, i) {
+  let inner = "", cls = "";
+  if (d.type === "confirm") {
+    inner = `<h3>${esc(d.title)}</h3><p>${esc(d.message)}</p><div class="actions">${btn("Cancel", "dlgClose", { style: "quiet" })}${btn(d.confirm, "dlgOk", { style: d.danger ? "danger" : "primary" })}</div>`;
+  } else if (d.type === "input") {
+    const err = d.value.trim() ? d.validate(d.value) : null;
+    inner = `<h3>${esc(d.title)}</h3><div class="stack8">${field("dlg-in", d.label, d.value, "dlgInput", { bad: !!err })}${err ? `<div class="err">${esc(err)}</div>` : ""}</div><div class="actions">${btn("Cancel", "dlgClose", { style: "quiet" })}${btn(d.confirm, "dlgOk", { style: "primary", disabled: !d.value.trim() || !!err })}</div>`;
+  } else if (d.type === "picker") {
+    cls = "picker";
+    const n = node(d.path);
+    let list;
+    if (!n || n.denied) list = stateView("error", "Cannot open this folder", "Shell does not have access to this folder.");
+    else {
+      const all = sortEntries(entries(d.path), "Name", true, "", false).filter(e => e.isDir || (!d.folder && d.ext.includes(e.name.split(".").pop().toLowerCase())));
+      list = all.length ? `<div class="scroll fill" data-s="pick:${esc(d.path)}">${all.map(e => e.isDir
+        ? `<div class="pick-row" data-a="pickOpen" data-v="${esc(e.path)}">${icon("folder")}<span class="grow ell">${esc(e.name)}</span></div>`
+        : `<div class="pick-row" data-a="pickToggle" data-v="${esc(e.path)}"><button type="button" class="tick ${d.picked.includes(e.path) ? "on" : ""}" aria-label="Select ${esc(e.name)}" data-a="pickToggle" data-v="${esc(e.path)}"><i>${d.picked.includes(e.path) ? icon("check") : ""}</i></button>${icon("description")}<span class="grow ell">${esc(e.name)}</span><span class="muted" style="font-size:15px">${fmtSize(e.size)}</span></div>`).join("")}</div>`
+        : stateView("folder_off", "Nothing to pick here", "Go up, or open a different folder.");
+    }
+    inner = `<h3>${esc(d.title)}</h3><div class="muted ell">${esc(d.path)}</div><div class="box grow">${list}</div><div class="row">${btn("Up", "pickUp", { disabled: d.path === "/" })}<div class="grow"></div>${btn("Cancel", "dlgClose", { style: "quiet" })}${d.folder ? btn("Use this folder", "pickUse", { style: "primary" }) : btn(d.picked.length > 1 ? `Choose ${d.picked.length} files` : "Choose", "pickUse", { style: "primary", disabled: !d.picked.length })}</div>`;
+  } else if (d.type === "obb") {
+    const q = d.pkg.trim(), valid = validPkg(q);
+    const m = q ? S.apps.list.filter(a => a.pkg !== q && (a.pkg.toLowerCase().includes(q.toLowerCase()) || a.label.toLowerCase().includes(q.toLowerCase()))).slice(0, 3) : [];
+    inner = `<h3>Which app are these for?</h3><div class="stack8"><div class="body-l">${d.sources.length} ${d.sources.length === 1 ? "file" : "files"} go to Android/obb/&lt;package&gt;.</div>${field("obb-pkg", "Package name", d.pkg, "obbPkg", { bad: q && !valid })}<div id="obb-matches">${m.map(a => btn(a.label, "obbMatch", { style: "quiet", v: a.pkg })).join("")}</div></div><div class="actions">${btn("Cancel", "dlgClose", { style: "quiet" })}${btn("Import", "obbImport", { style: "primary", disabled: !valid })}</div>`;
+  } else if (d.type === "pages") {
+    cls = "pages";
+    inner = `<h3>Android Settings</h3><p>Meta locks the main Android Settings page on this firmware, so choose a section to open it directly.</p><div class="wrap">${SETTINGS_PAGES.map(p => btn(p, "pageOpen", { style: "outline", v: p })).join("")}</div><div class="actions">${btn("Close", "dlgClose", { style: "quiet" })}</div>`;
+  } else if (d.type === "install") {
+    const row = (label, val, act, a) => `<div class="row16" style="align-items:center"><div class="grow"><div class="label">${label}</div><div class="muted" style="overflow-wrap:anywhere">${esc(val || "Not chosen")}</div></div>${btn(act, a)}</div>`;
+    inner = `<h3>Install APK and OBB</h3><div class="stack">${row("APK", d.apk, "Choose APK", "instApk")}${row("OBB folder (optional)", d.obb, "Choose folder", "instObb")}<div class="muted">The OBB folder's contents are copied to Android/obb for this app after it installs.</div></div><div class="actions">${btn("Cancel", "dlgClose", { style: "quiet" })}${btn("Install", "instGo", { style: "primary", disabled: !d.apk })}</div>`;
+  }
+  return `<div class="scrim" role="dialog" aria-modal="true" style="z-index:${5 + i}"><div class="dialog ${cls}">${inner}</div></div>`;
+}
+
+/* ---------- Render with scroll and focus preserved ---------- */
+const app = document.getElementById("app");
+const scrolls = {};
+function render() {
+  app.querySelectorAll("[data-s]").forEach(e => { scrolls[e.dataset.s] = e.scrollTop; });
+  const active = document.activeElement;
+  const fid = active && active.id && app.contains(active) ? active.id : null;
+  const sel = fid && active.selectionStart != null ? [active.selectionStart, active.selectionEnd] : null;
+  app.innerHTML = view();
+  app.querySelectorAll("[data-s]").forEach(e => { if (scrolls[e.dataset.s]) e.scrollTop = scrolls[e.dataset.s]; });
+  app.querySelectorAll("[data-auto]").forEach(e => { e.scrollTop = e.scrollHeight; });
+  app.querySelectorAll("[data-end]").forEach(e => { e.scrollLeft = e.scrollWidth; });
+  if (fid) { const el = document.getElementById(fid); if (el) { el.focus(); if (sel) el.setSelectionRange(sel[0], sel[1]); } }
+}
+function fit() {
+  const wrap = document.getElementById("wrap"), avail = wrap.parentElement.clientWidth - parseFloat(getComputedStyle(document.body).paddingLeft) - parseFloat(getComputedStyle(document.body).paddingRight);
+  const scale = Math.min(1, avail / 1280);
+  document.getElementById("panel").style.transform = `scale(${scale})`;
+  wrap.style.width = `${1280 * scale}px`;
+  wrap.style.height = `${800 * scale}px`;
+}
+addEventListener("resize", fit);
+
+/* ---------- Dot web background: same behaviour as DotWebBackdrop.kt ---------- */
+(function dotWeb() {
+  const panel = document.getElementById("panel"), canvas = document.getElementById("web"), ctx = canvas.getContext("2d");
+  const ratio = Math.min(2, window.devicePixelRatio || 1), W = 1280, H = 800, SPACING = 56, REACH = 176, LINK = 96, PULL = .14;
+  const stillMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  canvas.width = W * ratio; canvas.height = H * ratio;
+  let seed = 7;
+  const rand = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  const dots = [];
+  for (let y = 0; y < H / SPACING + 1; y++) for (let x = 0; x < W / SPACING + 1; x++) {
+    dots.push([(x + .5) * SPACING + (rand() - .5) * SPACING * .7, (y + .5) * SPACING + (rand() - .5) * SPACING * .7]);
+  }
+  const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+  let target = null, px = 0, py = 0, strength = 0, running = false;
+  function draw() {
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    const near = [];
+    for (const [x, y] of dots) {
+      const close = Math.max(0, 1 - Math.hypot(x - px, y - py) / REACH) * strength;
+      const dx = x + (px - x) * close * PULL, dy = y + (py - y) * close * PULL;
+      const [r, g, b] = mix([68, 51, 97], [155, 92, 246], close);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.beginPath(); ctx.arc(dx, dy, 1.5 * (1 + close), 0, 6.2832); ctx.fill();
+      if (close > 0) near.push([dx, dy, close]);
+    }
+    ctx.lineWidth = 1;
+    const line = (x1, y1, x2, y2, a) => { ctx.strokeStyle = `rgba(155,92,246,${a})`; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); };
+    near.forEach(([x, y, c], i) => {
+      line(px, py, x, y, c * .45);
+      for (let j = i + 1; j < near.length; j++) {
+        const gap = Math.hypot(x - near[j][0], y - near[j][1]);
+        if (gap < LINK) line(x, y, near[j][0], near[j][1], Math.min(c, near[j][2]) * (1 - gap / LINK));
+      }
+    });
+  }
+  function frame() {
+    const want = target ? 1 : 0;
+    if (target) {
+      px += (target[0] - px) * (stillMotion ? 1 : .2); py += (target[1] - py) * (stillMotion ? 1 : .2);
+      if (Math.hypot(target[0] - px, target[1] - py) < .5) { px = target[0]; py = target[1]; }
+    }
+    strength += (want - strength) * (stillMotion ? 1 : .12);
+    if (Math.abs(want - strength) < .01) strength = want;
+    draw();
+    if (strength === want && (!target || (px === target[0] && py === target[1]))) { running = false; return; }
+    requestAnimationFrame(frame);
+  }
+  function moveTo(next) {
+    if (next && strength === 0) { px = next[0]; py = next[1]; }
+    target = next;
+    if (!running) { running = true; requestAnimationFrame(frame); }
+  }
+  panel.addEventListener("pointermove", e => { const r = panel.getBoundingClientRect(); moveTo([(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]); });
+  panel.addEventListener("pointerleave", () => moveTo(null));
+  panel.addEventListener("pointerup", e => { if (e.pointerType === "touch") moveTo(null); });
+  draw();
+})();
+
+/* ---------- Terminal simulation ---------- */
+function tOut(t, k = "") { const l = S.term.lines; l.push({ t, k }); if (l.length > 5000) l.shift(); }
+let termTimer = null;
+function termResolve(p) {
+  const raw = p.startsWith("/") ? p : join(S.term.cwd, p), out = [];
+  for (const s of raw.split("/")) { if (!s || s === ".") continue; if (s === "..") out.pop(); else out.push(s); }
+  return "/" + out.join("/");
+}
+function termRun(raw) {
+  const t = S.term, cmd = raw.trim();
+  if (!cmd || t.running) return;
+  t.history = [cmd, ...t.history.filter(h => h !== cmd)].slice(0, 200);
+  t.idx = -1; t.input = "";
+  tOut(`${t.cwd} $ ${cmd}`, "cmd");
+  const parts = (cmd.match(/"[^"]*"|'[^']*'|\S+/g) || []).map(s => s.replace(/^["']|["']$/g, ""));
+  const [c, ...a] = parts;
+  const exit = n => tOut(`Exited with code ${n}.`, "status");
+  const stream = (lines, ms) => {
+    t.running = true; let i = 0;
+    termTimer = setInterval(() => {
+      if (lines && i >= lines.length) { clearInterval(termTimer); t.running = false; render(); return; }
+      if (lines) tOut(lines[i++]); else tOut(fakeLog().raw);
+      updateTerm();
+    }, ms);
+  };
+  switch (c) {
+    case "clear": t.lines = []; break;
+    case "pwd": tOut(t.cwd); break;
+    case "whoami": tOut("shell"); break;
+    case "id": tOut("uid=2000(shell) gid=2000(shell) groups=2000(shell),1004(input),1007(log),1011(adb),1015(sdcard_rw),3003(inet)"); break;
+    case "echo": tOut(a.join(" ")); break;
+    case "su": tOut("/system/bin/sh: su: inaccessible or not found"); exit(127); break;
+    case "cd": {
+      const p = termResolve(a[0] || "/sdcard"), n = node(p);
+      if (!n) { tOut(`cd: ${a[0]}: No such file or directory`); exit(2); }
+      else if (!n.d) { tOut(`cd: ${a[0]}: Not a directory`); exit(2); }
+      else if (n.denied) { tOut(`cd: ${a[0]}: Permission denied`); exit(2); }
+      else t.cwd = p;
+      break;
+    }
+    case "ls": {
+      const showAll = a.includes("-a") || a.includes("-la") || a.includes("-al"), long = a.includes("-l") || a.includes("-la") || a.includes("-al");
+      const target = a.find(x => !x.startsWith("-")), p = termResolve(target || "."), n = node(p);
+      if (!n) { tOut(`ls: ${target}: No such file or directory`); exit(1); break; }
+      if (n.denied) { tOut(`ls: ${target || p}: Permission denied`); exit(1); break; }
+      if (!n.d) { tOut(target); break; }
+      sortEntries(entries(p), "Name", true, "", showAll).forEach(e => tOut(long ? `${e.isDir ? "drwxrwx--x" : "-rw-rw----"} 2 root sdcard_rw ${String(e.size).padStart(11)} ${fmtDate(e.t)} ${e.name}` : e.name));
+      break;
+    }
+    case "cat": {
+      const p = termResolve(a[0] || ""), n = node(p);
+      if (!a[0]) { tOut("cat: missing file"); exit(1); }
+      else if (!n) { tOut(`cat: ${a[0]}: No such file or directory`); exit(1); }
+      else if (n.denied) { tOut(`cat: ${a[0]}: Permission denied`); exit(1); }
+      else if (n.d) { tOut(`cat: ${a[0]}: Is a directory`); exit(1); }
+      else tOut("(file contents are not simulated)", "status");
+      break;
+    }
+    case "mkdir": {
+      const name = a.find(x => !x.startsWith("-"));
+      if (!name) { tOut("mkdir: Needs 1 argument"); exit(1); break; }
+      const p = termResolve(name);
+      if (p.startsWith("/sdcard")) ensureDir(p); else { tOut(`mkdir: '${name}': Permission denied`); exit(1); }
+      break;
+    }
+    case "rm": {
+      const name = a.find(x => !x.startsWith("-") ), p = name && termResolve(name), n = p && node(p);
+      if (!n) { tOut(`rm: ${name || "missing operand"}: No such file or directory`); exit(1); }
+      else if (PROTECTED.has(p) || !p.startsWith("/sdcard")) { tOut(`rm: ${name}: Permission denied`); exit(1); }
+      else if (n.d && !a.some(x => /r/.test(x) && x.startsWith("-"))) { tOut(`rm: ${name}: Is a directory`); exit(1); }
+      else removePath(p);
+      break;
+    }
+    case "getprop":
+      if (a[0]) tOut(S.props[a[0]] || "");
+      else Object.keys(S.props).sort().forEach(k => tOut(`[${k}]: [${S.props[k]}]`));
+      break;
+    case "setprop":
+      if (a.length < 1) { tOut("usage: setprop NAME VALUE"); exit(1); }
+      else if (a[0].startsWith("ro.")) { tOut(`Failed to set property '${a[0]}' to '${a[1] || ""}'`); exit(1); }
+      else S.props[a[0]] = a[1] || "";
+      break;
+    case "pm":
+      if (a[0] === "list" && a[1] === "packages") S.apps.list.filter(x => a[2] !== "-3" || !x.sys).forEach(x => tOut(`package:${x.pkg}`));
+      else { tOut("Only 'pm list packages' is simulated. Use the Apps screen for the rest.", "status"); }
+      break;
+    case "df": tOut("Filesystem      Size  Used Avail Use% Mounted on"); tOut("/dev/fuse       108G   41G   67G  38% /storage/emulated"); break;
+    case "dumpsys":
+      if (a[0] === "battery") ["Current Battery Service state:", "  AC powered: false", "  USB powered: false", "  status: 3", "  health: 2", `  level: ${S.util.bat}`, "  voltage: 4012", "  temperature: 312"].forEach(l => tOut(l));
+      else tOut(`Only 'dumpsys battery' is simulated.`, "status");
+      break;
+    case "reboot": doReboot(a[0] ? `Reboot to ${a[0]}` : "Reboot"); tOut("The shell connection closed.", "status"); break;
+    case "sleep": stream(Array(Math.max(0, Math.min(+a[0] || 1, 30))).fill("").map((_, i) => `(sleeping ${i + 1})`), 1000); break;
+    case "logcat": stream(null, 500); break;
+    default: tOut(`/system/bin/sh: ${c}: inaccessible or not found`); exit(127);
+  }
+  render();
+}
+function updateTerm() {
+  const el = document.getElementById("term-out");
+  if (el) { el.innerHTML = termOutput(); el.scrollTop = el.scrollHeight; }
+}
+
+/* ---------- Logcat simulation ---------- */
+const LOG = [["I", "VrApi", () => `FPS=${70 + Math.floor(Math.random() * 3)},Prd=45ms,Tear=0,Early=0,Stale=${Math.floor(Math.random() * 3)},CPU4/GPU=${S.props[P.cpu] || 3}/${S.props[P.gpu] || 3},GPU%=0.${60 + Math.floor(Math.random() * 30)}`], ["I", "VrApi", () => "Compositor frame submitted"], ["D", "OVRPlugin", () => "Boundary state unchanged"], ["D", "AudioFlinger", () => "mixer(0xb400) throttle end"], ["W", "OVRPlugin", () => "Compositor layer fell back to low quality"], ["I", "ActivityManager", () => "Start proc for service com.oculus.vrshell"], ["E", "Unity", () => "NullReferenceException in PlayerController"], ["V", "InputDispatcher", () => "Delivering controller event"]];
+const LV = { V: "Verbose", D: "Debug", I: "Info", W: "Warning", E: "Error" };
+function fakeLog() {
+  const pick = Math.random() < .55 ? LOG[0] : LOG[Math.floor(Math.random() * LOG.length)], d = new Date(), z = (n, l = 2) => String(n).padStart(l, "0");
+  const raw = `${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}.${z(d.getMilliseconds(), 3)}  ${1000 + Math.floor(Math.random() * 3000)}  ${1000 + Math.floor(Math.random() * 3000)} ${pick[0]} ${pick[1].padEnd(8)}: ${pick[2]()}`;
+  return { raw, level: LV[pick[0]], tag: pick[1] };
+}
+for (let i = 0; i < 14; i++) S.util.log.lines.push(fakeLog());
+setInterval(() => {
+  const l = S.util.log;
+  if (!l.running || l.paused || !up()) return;
+  const was = logVisible().length;
+  l.lines.push(fakeLog());
+  if (l.lines.length > 5000) l.lines.shift();
+  if (S.dest === "Utilities" && S.util.tab === "Logcat" && !S.setup) {
+    const out = document.getElementById("log-out");
+    if (!out || !was) { if (logVisible().length) render(); }
+    else { out.innerHTML = logHtml(); out.scrollTop = out.scrollHeight; }
+  }
+}, 900);
+
+/* ---------- Actions ---------- */
+function doReboot(mode) {
+  S.busy.reboot = mode === "Reboot";
+  render();
+  later(700, () => {
+    S.busy.reboot = false; ok("Rebooting."); S.adbUp = false; S.bytezukuUp = false;
+    S.home.prox = false;
+    Object.values(P).forEach(p => { S.props[p] = ""; });
+    S.util.tw.capture = "";
+    setTimeout(() => { if (S.paired && S.pref !== "ByteZuku") { S.adbUp = true; ok("Reconnected after reboot. Display values were reset."); } }, 4500);
+  });
+}
+function reconnect() {
+  const useAdb = S.pref !== "ByteZuku", useSz = S.pref !== "Adb";
+  S.connecting = true; render();
+  later(900, () => {
+    S.connecting = false;
+    if (useSz && S.bytezuku === "Ready") { S.bytezukuUp = true; ok("Connected."); }
+    else if (useAdb && S.paired) { S.adbUp = true; ok("Connected."); }
+    else fail(useAdb ? "This headset has not been paired yet." : "No shell connection. Open Settings to connect.");
+  });
+}
+function goFiles(path) { S.files.path = path; S.files.sel = []; S.files.filter = ""; S.dest = "Files"; }
+function fileOp(label, done, ms, withProgress, finish) {
+  const f = S.files;
+  const op = { label, progress: withProgress ? 0 : null, cancelled: false };
+  f.op = op; render();
+  const started = Date.now();
+  const tick = setInterval(() => {
+    if (op.cancelled) { clearInterval(tick); return; }
+    const p = (Date.now() - started) / ms;
+    if (withProgress) { op.progress = Math.min(1, p); const el = document.getElementById("op-bar"); if (el) el.querySelector(".track i").style.width = `${op.progress * 100}%`, el.querySelector(".label").textContent = `${label} ${Math.floor(op.progress * 100)}%`; }
+    if (p >= 1) { clearInterval(tick); finish(); f.op = null; ok(done); }
+  }, 100);
+  op.tick = tick;
+}
+function pasteTargets(paths, dest) { return paths.map(p => [p, join(dest, parent(p) === dest ? copyName(base(p)) : base(p))]); }
+function doPaste() {
+  const f = S.files, clip = f.clip, dest = f.path, n = clip.paths.length, word = n === 1 ? "1 item" : `${n} items`;
+  if (clip.cut) {
+    fileOp("Moving", `Pasted ${word}.`, 600, false, () => {
+      clip.paths.filter(p => parent(p) !== dest).forEach(p => { const x = node(p); if (x) { placeAt(join(dest, base(p)), x); removePath(p); } });
+      f.clip = null;
+    });
+  } else {
+    fileOp("Copying", `Pasted ${word}.`, 3200, true, () => { pasteTargets(clip.paths, dest).forEach(([from, to]) => { const x = node(from); if (x) { placeAt(to, { ...clone(x), t: Math.floor(Date.now() / 1000) }); } }); });
+  }
+}
+function act(key, done, ms, fn) {
+  S.apps.busy = key; render();
+  later(ms, () => { S.apps.busy = null; if (fn) fn(); ok(done); });
+}
+function setProps(changes, done) {
+  S.disp.busy = true; render();
+  later(350, () => { Object.assign(S.props, changes); S.disp.busy = false; ok(done); });
+}
+function saveFile(folder, name, size) { ensureDir(folder).c[name] = file(size, Math.floor(Date.now() / 1000)); return join(folder, name); }
+let recTimer;
+function stopRec() {
+  clearTimeout(recTimer);
+  S.util.rec = false;
+  S.util.last = saveFile("/sdcard/Pasteularity/recordings", `recording-${stamp()}.mp4`, 48 * MB);
+  ok("Recording saved.");
+}
+const appSel = () => S.apps.list.find(x => x.pkg === S.apps.sel);
+const topDlg = () => S.dialogs[S.dialogs.length - 1];
+const closeDlg = () => { S.dialogs.pop(); render(); };
+function pickerDlg(title, start, opts, onPick) { S.dialogs.push({ type: "picker", title, path: start, picked: [], ...opts, onPick }); render(); }
+
+const A = {
+  go(v) { S.dest = v; render(); },
+  chip() { const k = status().k; if (k === "Connected") { S.dest = "Settings"; render(); } else if (k === "Not paired") A.openSetup(); else if (k === "Disconnected") reconnect(); },
+  reconnect, openSetup() { S.setup = true; S.onb.step = 0; S.onb.error = null; render(); },
+  /* Setup */
+  onbStep(v) { S.onb.step = +v; S.onb.error = null; render(); if (+v === 2 && !S.onb.port) later(1100, () => { if (!S.onb.port) { S.onb.port = S.props["service.adb.tls.port"]; S.onb.detected = true; } }); },
+  onbSettings() { ok("Developer options opened next to this window."); },
+  onbPair() {
+    const o = S.onb; o.pairing = true; o.error = null; render();
+    later(1400, () => {
+      o.pairing = false;
+      if (o.code === "000000") { o.error = "Pairing failed. Check the code and port, then try again."; return; }
+      S.paired = true; S.adbUp = true; S.setup = false; o.code = ""; S.dest = "Home"; ok("Paired with this headset.");
+    });
+  },
+  onbSkip() { S.setup = false; render(); },
+  useByteZuku() { if (S.bytezuku === "NeedsPermission") { S.bytezuku = "Ready"; render(); } else if (S.bytezuku === "Ready") { S.bytezukuUp = true; S.setup = false; ok("Connected."); } },
+  allowByteZuku() { S.bytezuku = "Ready"; S.bytezukuUp = true; ok("Connected."); },
+  /* Home */
+  openSettings() { S.dialogs.push({ type: "pages" }); render(); },
+  pageOpen(v) { S.dialogs.pop(); ok(`${v} opened in its own window.`); },
+  rebootAsk(v) {
+    if (!up()) return;
+    confirmDlg(`${v}?`, v === "Reboot" ? "Anything open on the headset closes." : "The headset leaves Horizon OS. Use the volume and power buttons on the headset to get back.", v, () => doReboot(v));
+  },
+  prox(v) { const off = v === "true"; S.busy.prox = true; render(); later(350, () => { S.busy.prox = false; S.home.prox = off; ok(off ? "Proximity sensor disabled." : "Proximity sensor enabled."); }); },
+  toggleAdv() { S.home.adv = !S.home.adv; render(); },
+  /* Terminal */
+  termRun() { termRun(S.term.input); },
+  termStop() { clearInterval(termTimer); S.term.running = false; tOut("Stopped.", "status"); render(); },
+  termCopy(_, el) { const text = S.term.lines.map(l => l.t).join("\n"); navigator.clipboard && navigator.clipboard.writeText(text).then(() => ok("Output copied."), () => fail("Clipboard is blocked in this preview.")); },
+  termClear() { S.term.lines = []; render(); },
+  histPrev() { const t = S.term; if (!t.history.length) return; t.idx = Math.min(t.idx + 1, t.history.length - 1); t.input = t.history[t.idx]; render(); },
+  histNext() { const t = S.term; t.idx = Math.max(t.idx - 1, -1); t.input = t.idx < 0 ? "" : t.history[t.idx]; render(); },
+  snipRun(v) { termRun(S.snippets[+v][1]); },
+  snipEdit() { S.term.edit = !S.term.edit; render(); },
+  snipRemove(v) { S.snippets.splice(+v, 1); render(); },
+  snipSave() { const cmd = S.term.input.trim(); inputDlg("Save snippet", "Name", "Save", name => { S.snippets.push([name, cmd]); ok("Snippet saved."); }); },
+  /* Files */
+  open(v) { S.files.path = v; S.files.sel = []; S.files.filter = ""; render(); },
+  fileOpen(v) { const n = node(v); if (n && n.d) A.open(v); },
+  fileToggle(v) { const f = S.files; f.sel = f.sel.includes(v) ? f.sel.filter(x => x !== v) : [...f.sel, v]; render(); },
+  fileSort(v) { const f = S.files; if (f.sort === v) f.asc = !f.asc; else { f.sort = v; f.asc = true; } render(); },
+  fileHidden() { S.files.hidden = !S.files.hidden; render(); },
+  fileRefresh() { render(); },
+  fileClear() { S.files.sel = []; render(); },
+  fileCopy() { const f = S.files; f.clip = { paths: f.sel, cut: false }; f.sel = []; render(); },
+  fileCut() { const f = S.files; f.clip = { paths: f.sel, cut: true }; f.sel = []; render(); },
+  clipDiscard() { S.files.clip = null; render(); },
+  newFolder() { inputDlg("New folder", "Folder name", "Create", name => { if (!S.files.path.startsWith("/sdcard")) { fail("mkdir: Permission denied"); return; } ensureDir(join(S.files.path, name)); ok("Folder created."); }, "", validName); },
+  fileRename() { const p = S.files.sel[0]; inputDlg("Rename", "New name", "Rename", name => { if (PROTECTED.has(p)) { fail("That folder is protected and cannot be changed."); return; } placeAt(join(parent(p), name), node(p)); if (name !== base(p)) removePath(p); S.files.sel = []; ok("Renamed."); }, base(p), validName); },
+  fileDelete() {
+    const sel = S.files.sel, names = sel.slice(0, 5).map(base).join("\n") + (sel.length > 5 ? `\nand ${sel.length - 5} more` : "") + "\n\nThis cannot be undone.";
+    confirmDlg(`Delete ${sel.length} ${sel.length === 1 ? "item" : "items"}?`, names, "Delete", () => {
+      if (sel.some(p => PROTECTED.has(p))) { fail("That folder is protected and cannot be changed."); return; }
+      fileOp("Deleting", `Deleted ${sel.length === 1 ? "1 item" : `${sel.length} items`}.`, 500, false, () => { sel.forEach(removePath); S.files.sel = []; });
+    });
+  },
+  paste() {
+    const f = S.files, clip = f.clip, dest = f.path;
+    if (clip.paths.some(p => dest === p || dest.startsWith(p + "/"))) { fail("A folder cannot be pasted into itself."); return; }
+    if (clip.cut && clip.paths.every(p => parent(p) === dest)) { fail("Those items are already in this folder."); return; }
+    const targets = clip.cut ? clip.paths.map(p => join(dest, base(p))).filter(p => !clip.paths.includes(p)) : pasteTargets(clip.paths, dest).map(x => x[1]);
+    const clash = targets.filter(p => node(p));
+    if (clash.length) confirmDlg(`Replace ${clash.length} ${clash.length === 1 ? "item" : "items"}?`, clash.slice(0, 5).map(base).join("\n") + "\n\nThese already exist in this folder.", "Replace", doPaste);
+    else doPaste();
+  },
+  opCancel() { const op = S.files.op; if (op) { op.cancelled = true; clearInterval(op.tick); S.files.op = null; fail("Cancelled. Files already written were kept."); } },
+  importObb() {
+    pickerDlg("Choose OBB files", DL, { ext: ["obb"], multi: true }, picked => {
+      S.dialogs.push({ type: "obb", sources: picked, pkg: picked.map(p => obbPkg(base(p))).find(Boolean) || "" });
+    });
+  },
+  obbMatch(v) { topDlg().pkg = v; render(); },
+  obbImport() {
+    const d = topDlg(), folder = join(OBB, d.pkg.trim());
+    S.dialogs.pop(); S.dest = "Files";
+    fileOp("Importing OBB", `Imported to ${folder}.`, 3000, true, () => { const dst = ensureDir(folder); d.sources.forEach(p => { const n = node(p); if (n) dst.c[base(p)] = clone(n); }); });
+  },
+  /* Picker */
+  pickOpen(v) { const d = topDlg(); d.path = v; d.picked = []; render(); },
+  pickUp() { const d = topDlg(); const up = parent(d.path); if (up) { d.path = up; d.picked = []; render(); } },
+  pickToggle(v) { const d = topDlg(); d.picked = d.picked.includes(v) ? d.picked.filter(x => x !== v) : d.multi ? [...d.picked, v] : [v]; render(); },
+  pickUse() { const d = S.dialogs.pop(); d.onPick(d.folder ? [d.path] : d.picked); render(); },
+  /* Display */
+  propReset(v) { setProps({ [v]: "" }, "Reset to default."); },
+  texSet(v) { setProps({ [P.w]: v, [P.h]: v }, "Texture size applied."); },
+  texReset() { setProps({ [P.w]: "", [P.h]: "" }, "Reset to default."); },
+  texApply() { setProps({ [P.w]: S.disp.cw, [P.h]: S.disp.ch }, "Texture size applied."); },
+  resetAll() { confirmDlg("Reset all display settings?", "Every value on this screen goes back to the system default.", "Reset", () => setProps(Object.fromEntries(Object.values(P).map(p => [p, ""])), "All display settings reset.")); },
+  profSave() { inputDlg("Save profile", "Name", "Save", name => { const values = Object.fromEntries(Object.values(P).filter(p => S.props[p]).map(p => [p, S.props[p]])); S.profiles = [...S.profiles.filter(x => x.name !== name), { name, values }]; ok("Profile saved."); }); },
+  profApply(v) { const pf = S.profiles[+v]; setProps(Object.fromEntries(Object.values(P).map(p => [p, pf.values[p] || ""])), `Applied ${pf.name}.`); },
+  profDelete(v) { const pf = S.profiles[+v]; confirmDlg(`Delete ${pf.name}?`, "This only removes the saved profile. Current values do not change.", "Delete", () => { S.profiles = S.profiles.filter(x => x !== pf); render(); }); },
+  /* Apps */
+  appSys() { S.apps.sys = !S.apps.sys; render(); },
+  appSel(v) { S.apps.sel = v; render(); },
+  appAct(v) {
+    const app = appSel();
+    if (v === "launch") act("launch", `Launched ${app.label}.`, 600);
+    if (v === "stop") act("stop", `Stopped ${app.label}.`, 400);
+    if (v === "export") { const folder = `/sdcard/Pasteularity/apks/${app.pkg}`; act("export", `Exported to ${folder}.`, 900, () => saveFile(folder, "base.apk", 180 * MB)); }
+  },
+  appFolder(v) { const p = join(v, appSel().pkg); if (node(p)) { goFiles(p); render(); } else fail(`This app has no folder at ${p}.`); },
+  appAsk(v) {
+    const app = appSel();
+    if (v === "cache") confirmDlg(`Clear cache for ${app.label}?`, "This clears the app's external cache. Its private cache needs root, so it stays.", "Clear cache", () => act("cache", "External cache cleared.", 500, () => { const c = node(join(join(DATA, app.pkg), "cache")); if (c) c.c = {}; }));
+    if (v === "data") confirmDlg(`Clear all data for ${app.label}?`, "Saves, logins and settings stored by this app are deleted. This cannot be undone.", "Clear data", () => act("data", `Data cleared for ${app.label}.`, 800, () => { removePath(join(DATA, app.pkg)); }));
+    if (v === "uninstall") confirmDlg(`Uninstall ${app.label}?`, "The app and its data are removed from this headset.", "Uninstall", () => act("uninstall", `Uninstalled ${app.label}.`, 900, () => { S.apps.list = S.apps.list.filter(x => x !== app); S.apps.sel = null; removePath(join(DATA, app.pkg)); removePath(join(OBB, app.pkg)); }));
+  },
+  installOpen() { if (S.apps.step) return; S.dialogs.push({ type: "install", apk: null, obb: null }); render(); },
+  instApk() { const d = topDlg(); pickerDlg("Choose an APK", DL, { ext: ["apk"], multi: false }, p => { d.apk = p[0]; }); },
+  instObb() { const d = topDlg(); pickerDlg("Choose the OBB folder", DL, { folder: true }, p => { d.obb = p[0]; }); },
+  instGo() {
+    const { apk, obb } = S.dialogs.pop(), name = base(apk).replace(/\.apk$/i, ""), pkg = name === "TrackRacer" ? "com.example.racer" : `com.sideloaded.${name.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+    const steps = [obb && "Reading APK", "Installing", obb && "Copying OBB"].filter(Boolean);
+    let i = 0;
+    const next = () => {
+      if (i < steps.length) { S.apps.step = steps[i++]; render(); setTimeout(next, 1300); return; }
+      S.apps.step = null;
+      if (obb) { const dst = ensureDir(join(OBB, pkg)); Object.entries(node(obb).c).forEach(([k, n]) => { dst.c[k] = clone(n); }); }
+      S.apps.list = [...S.apps.list.filter(x => x.pkg !== pkg), { pkg, label: name.replace(/([a-z])([A-Z])/g, "$1 $2"), ver: "1402", sys: false }];
+      S.apps.sel = pkg; ok(`Installed ${pkg}.`);
+    };
+    next();
+  },
+  /* Utilities */
+  utilTab(v) { S.util.tab = v; render(); },
+  devRefresh() { S.util.deviceBusy = true; render(); later(500, () => { S.util.deviceBusy = false; }); },
+  shot() { const u = S.util; u.shotBusy = true; render(); later(700, () => { u.shotBusy = false; u.last = saveFile("/sdcard/Pasteularity/screenshots", `screenshot-${stamp()}.png`, 3.1 * MB); ok("Screenshot saved."); }); },
+  recSec(v) { S.util.recSec = +v; render(); },
+  recStart() { S.util.rec = true; render(); recTimer = setTimeout(stopRec, S.util.recSec * 1000); },
+  recStop() { stopRec(); },
+  capOpen() { ensureDir("/sdcard/Pasteularity"); goFiles("/sdcard/Pasteularity"); render(); },
+  logStart() { S.util.log.running = true; S.util.log.paused = false; render(); },
+  logStop() { S.util.log.running = false; render(); },
+  logPause() { S.util.log.paused = !S.util.log.paused; render(); },
+  logClear() { S.util.log.lines = []; render(); },
+  logLevel(v) { S.util.log.level = v; render(); },
+  logExport() { const l = S.util.log; l.exporting = true; render(); later(600, () => { l.exporting = false; const p = saveFile("/sdcard/Pasteularity/logs", `logcat-${stamp()}.txt`, 84000); ok(`Saved to ${p}.`); }); },
+  wifiRefresh() { ok("Network info refreshed."); },
+  copyAdb(v) { navigator.clipboard && navigator.clipboard.writeText(v).then(() => ok("Copied."), () => fail("Clipboard is blocked in this preview.")); },
+  trim() { S.util.trim = true; render(); later(900, () => { S.util.trim = false; ok("App caches trimmed."); }); },
+  /* Settings */
+  pref(v) { S.pref = v; reconnect(); },
+  forgetAsk() { confirmDlg("Forget pairing?", "Pasteularity disconnects and you will need a new pairing code to reconnect.", "Forget", () => { S.paired = false; S.adbUp = false; ok("Pairing forgotten."); }); },
+  /* Dialogs */
+  dlgClose: closeDlg,
+  dlgOk() { const d = S.dialogs.pop(); if (d.type === "input") d.onOk(d.value.trim()); else d.onOk(); render(); },
+};
+const prefixed = {
+  "propSet": (prop, v) => setProps({ [prop]: v }, "Applied."),
+  "tweak": (key, v) => { const u = S.util; u.twBusy = true; render(); later(300, () => { u.twBusy = false; u.tw[key] = v; const t = TWEAKS.find(x => x[0] === key); ok(`${t[1]}: ${t[3].find(o => o[0] === v)[1]}.`); }); },
+};
+const inputs = {
+  onbCode(v, el) { S.onb.code = v.replace(/\D/g, "").slice(0, 6); S.onb.error = null; el.value = S.onb.code; refreshAfterInput(); },
+  onbPort(v, el) { S.onb.port = v.replace(/\D/g, "").slice(0, 5); S.onb.detected = false; S.onb.error = null; el.value = S.onb.port; refreshAfterInput(); },
+  termInput(v) { S.term.input = v; S.term.idx = -1; refreshAfterInput(); },
+  fileFilter(v) { S.files.filter = v; refreshAfterInput(); },
+  texW(v, el) { S.disp.cw = v.replace(/\D/g, "").slice(0, 5); el.value = S.disp.cw; refreshAfterInput(); },
+  texH(v, el) { S.disp.ch = v.replace(/\D/g, "").slice(0, 5); el.value = S.disp.ch; refreshAfterInput(); },
+  appQ(v) { S.apps.q = v; refreshAfterInput(); },
+  logTag(v) { S.util.log.tag = v; refreshAfterInput(); },
+  dlgInput(v) { topDlg().value = v; refreshAfterInput(); },
+  obbPkg(v) { topDlg().pkg = v; refreshAfterInput(); },
+};
+const refreshAfterInput = () => render();
+
+app.addEventListener("click", e => {
+  const t = e.target.closest("[data-a]");
+  if (!t || t.disabled) return;
+  const name = t.dataset.a, v = t.dataset.v;
+  if (name.includes(":")) { const [k, arg] = name.split(":"); prefixed[k](arg, v); return; }
+  A[name](v, t);
+});
+app.addEventListener("input", e => { const k = e.target.dataset.i; if (k) inputs[k](e.target.value, e.target); });
+app.addEventListener("keydown", e => {
+  const k = e.target.dataset && e.target.dataset.i;
+  if (!k) return;
+  if (k === "termInput") {
+    if (e.key === "Enter") { e.preventDefault(); termRun(S.term.input); }
+    if (e.key === "ArrowUp") { e.preventDefault(); A.histPrev(); }
+    if (e.key === "ArrowDown") { e.preventDefault(); A.histNext(); }
+  }
+  if (k === "dlgInput" && e.key === "Enter") { const d = topDlg(); if (d.value.trim() && !d.validate(d.value)) { e.preventDefault(); A.dlgOk(); } }
+  if (k === "onbCode" && e.key === "Enter" && S.onb.code.length === 6 && S.onb.port && !S.onb.pairing) { e.preventDefault(); A.onbPair(); }
+});
+document.querySelector(".sim-tools").addEventListener("click", e => {
+  const k = e.target.dataset && e.target.dataset.sim;
+  if (k === "disconnect") { S.adbUp = false; S.bytezukuUp = false; fail("The shell connection closed."); }
+  if (k === "unpair") { S.paired = false; S.adbUp = false; S.bytezukuUp = false; S.dialogs = []; fail("Pairing reset. The chip now offers setup."); }
+  if (k === "setup") { S.paired = false; S.adbUp = false; S.bytezukuUp = false; S.dialogs = []; S.setup = true; S.onb = { step: 0, code: "", port: "", detected: false, pairing: false, error: null }; render(); }
+  if (k === "bytezuku") { S.bytezuku = S.bytezuku === "NotRunning" ? "NeedsPermission" : S.bytezuku; ok("ByteZuku is running."); }
+});
+
+fit();
+render();
+</script>
