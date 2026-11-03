@@ -57,5 +57,4 @@ Even if the code is messy inside the app itself runs great and does everything i
 ## Links And Community
 
 * Check out my main website at [libpaste.win](https://libpaste.win)
-* Join the Discord server at [dsc.gg/libpaste](https://dsc.gg/libpaste) if you find any bugs or want to suggest new features or just wanna hang out.
-* 
+* Join the Discord server at [dsc.gg/libpaste](https://dsc.gg/libpaste) if you find any bugs or want to suggest new features or just wanna hang out!
